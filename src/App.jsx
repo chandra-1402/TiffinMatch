@@ -42,14 +42,14 @@ export default function App() {
   useEffect(() => {
     if (currentUser) {
       if (currentUser.role === 'cook' || currentUser.role === 'admin') {
-        fetch('http://localhost:3001/api/orders/all')
+        fetch(`${import.meta.env.VITE_API_URL}/api/orders/all`)
           .then(res => res.json())
           .then(data => {
             if (data.orders) setOrders(data.orders);
           })
           .catch(err => console.error('Error fetching all orders:', err));
       } else {
-        fetch(`http://localhost:3001/api/orders/${currentUser.uniqueId}`)
+        fetch(`${import.meta.env.VITE_API_URL}/api/orders/${currentUser.uniqueId}`)
           .then(res => res.json())
           .then(data => {
             if (data.orders) setOrders(data.orders);
@@ -173,7 +173,7 @@ export default function App() {
       estimatedDelivery: '18–22 mins'
     };
 
-    fetch('http://localhost:3001/api/orders', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newOrder)
@@ -207,7 +207,7 @@ export default function App() {
       estimatedDelivery: distanceKm < 4 ? '18–22 mins' : distanceKm <= 6 ? '25–30 mins' : '35–45 mins'
     };
 
-    fetch('http://localhost:3001/api/orders', {
+    fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newOrder)
@@ -222,7 +222,7 @@ export default function App() {
 
   // Update order status in Cook Portal
   const handleUpdateOrderStatus = (orderId, newStatus) => {
-    fetch(`http://localhost:3001/api/orders/${orderId}/status`, {
+    fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}/status`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })

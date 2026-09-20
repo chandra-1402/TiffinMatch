@@ -21,7 +21,7 @@ export default function OrderTrackerModal({ order, onClose }) {
     // Initial fetch and polling every 3 seconds
     const fetchOrderStatus = async () => {
       try {
-        const res = await fetch(`http://localhost:3001/api/orders/order/${order.id}`);
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/order/${order.id}`);
         const data = await res.json();
         if (data.order) {
           setLiveOrder(data.order);

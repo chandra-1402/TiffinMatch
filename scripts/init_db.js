@@ -157,7 +157,7 @@ async function setupDatabase() {
       const account = REGISTERED_ACCOUNTS[key];
       const defaultPassword = account.pin || account.passcode || 'password123';
       await pool.query(
-        'INSERT INTO users (id, unique_id, name, role, designation, phone, passcode, password, badge_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT (id) DO NOTHING',
+        'INSERT INTO users (id, unique_id, name, role, designation, phone, passcode, password, badge_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT DO NOTHING',
         [
           account.uniqueId,
           account.uniqueId,
@@ -174,13 +174,26 @@ async function setupDatabase() {
 
     // Insert Cooks and Menu Items
     for (const cook of HOME_COOKS) {
+      // Ensure user exists first for foreign key constraint
+      await pool.query(
+        'INSERT INTO users (id, unique_id, name, role, designation, phone, passcode, password, badge_number) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) ON CONFLICT DO NOTHING',
+        [
+          cook.uniqueId,
+          cook.uniqueId,
+          cook.name,
+          'cook',
+          'Home Cook',
+          null, null, 'password123', null
+        ]
+      );
+
       await pool.query(`
         INSERT INTO cook_profiles (
           id, user_id, kitchen_name, rating, reviews_count, distance_km, locality, cuisine, tagline, 
           image, cook_avatar, price_range, delivery_radius_km, prep_time_mins, is_hygiene_verified, 
           fssai_verified, experience_years, diet_type, daily_capacity, booked_capacity, hygiene_score
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT DO NOTHING
       `, [
         cook.id,
         cook.uniqueId,
@@ -211,7 +224,7 @@ async function setupDatabase() {
             INSERT INTO menu_items (
               id, cook_id, name, price, description, category, is_popular, is_thali, diet
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            ON CONFLICT (id) DO NOTHING
+            ON CONFLICT DO NOTHING
           `, [
             item.id,
             cook.id,
@@ -233,7 +246,7 @@ async function setupDatabase() {
         INSERT INTO orders (
           id, customer_id, customer_name, cook_name, items, food_category, price, delivery_fee, status, ordered_at, delivery_address, estimated_delivery
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT DO NOTHING
       `, [
         order.id,
         order.customerId,
@@ -256,7 +269,7 @@ async function setupDatabase() {
         INSERT INTO admin_audits (
           id, cook_id, cook_name, verification_type, status, date, auditor, notes
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT DO NOTHING
       `, [
         audit.id,
         audit.cookId,
@@ -273,7 +286,7 @@ async function setupDatabase() {
     for (const category of CATEGORIES) {
       await pool.query(`
         INSERT INTO categories (id, label, icon) VALUES ($1, $2, $3)
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT DO NOTHING
       `, [category.id, category.label, category.icon]);
     }
 
@@ -281,7 +294,7 @@ async function setupDatabase() {
     for (const address of DELIVERY_ADDRESSES) {
       await pool.query(`
         INSERT INTO delivery_addresses (id, label, detail, distance_km, tier) VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (id) DO NOTHING
+        ON CONFLICT DO NOTHING
       `, [address.id, address.label, address.detail, address.distanceKm, address.tier]);
     }
 
