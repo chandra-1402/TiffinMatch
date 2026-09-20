@@ -1,87 +1,101 @@
-# TiffinMatch
+# 🍱 TiffinMatch
 
-TiffinMatch is a comprehensive web application for managing a tiffin delivery service. It connects home cooks with customers looking for homemade meals. The platform supports multiple user roles, including Customers, Cooks, and Admins, providing a complete ecosystem for meal ordering, order tracking, and profile management.
+**TiffinMatch** is a comprehensive web application for managing a tiffin delivery service. It connects talented home cooks with customers looking for delicious, homemade meals. 🏡🍲 
 
-## Tech Stack
+The platform supports multiple user roles, including **Customers**, **Cooks**, and **Admins**, providing a complete ecosystem for meal ordering, order tracking, and profile management. 🚀
 
-**Frontend:**
-- React 19
-- Vite
-- React Router (if applicable)
-- Lucide React (for icons)
-- Recharts (for analytics/charts)
-- Leaflet (for mapping/delivery routing)
+---
 
-**Backend:**
-- Node.js
-- Express.js
-- SQLite (database)
-- cors (middleware)
+## 🛠️ Tech Stack
 
-## Features
+### 🎨 Frontend
+- ⚛️ **React 19** - UI Library
+- ⚡ **Vite** - Build Tool
+- 🛣️ **React Router** - Navigation
+- 🌠 **Lucide React** - Beautiful Icons
+- 📊 **Recharts** - Analytics & Charts
+- 🗺️ **Leaflet** - Mapping & Delivery Routing
 
-- **Multi-role Authentication:** Secure login and signup for Customers, Cooks, and Admins.
-- **Profile Management:** Users can update their profiles, including passwords and profile pictures.
-- **Order Management:** Customers can place orders, and cooks/admins can update order statuses.
-- **Role-based Dashboards:** Dedicated portals for each role (e.g., Cook portal, Admin portal).
-- **SQLite Database:** A lightweight, built-in SQLite database for storing users and orders.
+### ⚙️ Backend
+- 🟢 **Node.js** - Runtime Environment
+- 🚂 **Express.js** - Web Framework
+- 🗄️ **SQLite** - Lightweight Database
+- 🔗 **cors** - Middleware
 
-## Getting Started
+---
+
+## ✨ Features
+
+- 🔐 **Multi-role Authentication:** Secure login and signup for Customers, Cooks, and Admins.
+- 👤 **Profile Management:** Users can seamlessly update their profiles, passwords, and profile pictures.
+- 🛒 **Order Management:** Customers can place orders, while cooks and admins can instantly update order statuses.
+- 🎛️ **Role-based Dashboards:** Dedicated portals designed specifically for each role (e.g., Cook portal, Admin portal).
+- 💾 **SQLite Database:** A lightweight, built-in SQLite database for securely storing user and order data.
+
+---
+
+## 🚀 Getting Started
 
 Follow these steps to set up and run the project locally.
 
-### Prerequisites
+### 📋 Prerequisites
 
-- Node.js (v18 or higher recommended)
-- npm (Node Package Manager)
+- 🟢 **Node.js** (v18 or higher recommended)
+- 📦 **npm** (Node Package Manager)
 
-### Installation
+### 💻 Installation
 
-1. Clone the repository and navigate into the project directory:
+1. **Clone the repository** and navigate into the project directory:
    ```bash
+   git clone https://github.com/chandra-1402/TiffinMatch.git
    cd TiffinMatch
    ```
 
-2. Install the necessary dependencies for both the frontend and backend:
+2. **Install dependencies** for both the frontend and backend:
    ```bash
    npm install
    ```
 
-### Running the Project
+3. **Environment Setup**:
+   Create a `.env` file in the root directory based on `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
 
-You will need two terminal windows to run both the frontend and backend simultaneously.
+---
 
-**1. Start the Backend Server:**
+## 🏃‍♂️ Running the Project
 
+You will need **two terminal windows** to run both the frontend and backend simultaneously.
+
+### 1️⃣ Start the Backend Server
 The Express server handles API requests and connects to the SQLite database. It runs on port `3001`.
-
 ```bash
 npm run start:backend
 ```
 *Note: The SQLite database (`database.sqlite`) is automatically initialized upon starting the server.*
 
-**2. Start the Frontend Development Server:**
-
+### 2️⃣ Start the Frontend Server
 The Vite development server runs the React application, typically on port `5173`.
-
 ```bash
 npm run dev
 ```
 
-### Build for Production
+---
+
+## 🏗️ Build for Production
 
 To create an optimized production build of the frontend:
-
 ```bash
 npm run build
 ```
-
 The compiled assets will be placed in the `dist` directory.
 
-### Linting
+---
+
+## 🧹 Linting
 
 To check for code issues using Oxlint:
-
 ```bash
 npm run lint
 ```
