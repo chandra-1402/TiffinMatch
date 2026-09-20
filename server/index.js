@@ -1,41 +1,30 @@
 import express from 'express';
 import cors from 'cors';
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import pg from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const DB_PATH = path.join(__dirname, '..', 'database.sqlite');
+const { Pool } = pg;
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let db;
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
-// Initialize database connection
-async function initDb() {
-  db = await open({
-    filename: DB_PATH,
-    driver: sqlite3.Database
-  });
-  console.log('Connected to SQLite database.');
-  
-  // Safely add profile_pic column if it doesn't exist
-  try {
-    await db.exec('ALTER TABLE users ADD COLUMN profile_pic TEXT');
-    console.log('Added profile_pic column to users table.');
-  } catch (err) {
-    // Column already exists, ignore
-  }
-}
+pool.on('connect', () => {
+  console.log('Connected to PostgreSQL database.');
+});
 
-initDb();
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
+  process.exit(-1);
+});
 
 // --- Auth Endpoints ---
 
@@ -47,10 +36,11 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   try {
-    const user = await db.get(
-      'SELECT id, unique_id, name, role, designation, phone, badge_number, profile_pic FROM users WHERE unique_id = ? AND password = ?',
+    const result = await pool.query(
+      'SELECT id, unique_id, name, role, designation, phone, badge_number, profile_pic FROM users WHERE unique_id = $1 AND password = $2',
       [uniqueId.toUpperCase(), password]
     );
+    const user = result.rows[0];
 
     if (user) {
       if (role && user.role !== role && !(role === 'customer' && user.role !== 'admin')) {
@@ -92,15 +82,15 @@ app.post('/api/auth/signup', async (req, res) => {
 
   try {
     // Check if uniqueId already exists
-    const existing = await db.get('SELECT unique_id FROM users WHERE unique_id = ?', [uniqueId.toUpperCase()]);
-    if (existing) {
+    const existingRes = await pool.query('SELECT unique_id FROM users WHERE unique_id = $1', [uniqueId.toUpperCase()]);
+    if (existingRes.rows.length > 0) {
       return res.status(409).json({ error: 'Unique ID already exists. Please choose another.' });
     }
 
     const designation = role === 'cook' ? 'New Home Cook' : 'New Customer';
 
-    await db.run(
-      'INSERT INTO users (id, unique_id, name, role, designation, phone, password) VALUES (?, ?, ?, ?, ?, ?, ?)',
+    await pool.query(
+      'INSERT INTO users (id, unique_id, name, role, designation, phone, password) VALUES ($1, $2, $3, $4, $5, $6, $7)',
       [uniqueId.toUpperCase(), uniqueId.toUpperCase(), name, role || 'customer', designation, phone, password]
     );
 
@@ -125,15 +115,16 @@ app.put('/api/auth/profile', async (req, res) => {
   if (!uniqueId) return res.status(400).json({ error: 'Missing uniqueId' });
 
   try {
-    await db.run(
-      'UPDATE users SET name = ?, password = ?, profile_pic = ? WHERE unique_id = ?',
+    await pool.query(
+      'UPDATE users SET name = $1, password = $2, profile_pic = $3 WHERE unique_id = $4',
       [name, password, profilePic, uniqueId.toUpperCase()]
     );
     // Fetch updated user to return
-    const user = await db.get(
-      'SELECT id, unique_id, name, role, designation, phone, badge_number, profile_pic FROM users WHERE unique_id = ?',
+    const result = await pool.query(
+      'SELECT id, unique_id, name, role, designation, phone, badge_number, profile_pic FROM users WHERE unique_id = $1',
       [uniqueId.toUpperCase()]
     );
+    const user = result.rows[0];
     const userData = {
       id: user.id,
       uniqueId: user.unique_id,
@@ -157,9 +148,9 @@ app.post('/api/orders', async (req, res) => {
   const { id, customerId, customerName, cookName, items, foodCategory, price, deliveryFee, status, orderedAt, deliveryAddress, estimatedDelivery } = req.body;
 
   try {
-    await db.run(
+    await pool.query(
       `INSERT INTO orders (id, customer_id, customer_name, cook_name, items, food_category, price, delivery_fee, status, ordered_at, delivery_address, estimated_delivery)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
       [id, customerId, customerName, cookName, items, foodCategory || 'Mixed', price, deliveryFee, status, orderedAt, deliveryAddress, estimatedDelivery]
     );
     res.status(201).json({ success: true, message: 'Order saved' });
@@ -172,11 +163,11 @@ app.post('/api/orders', async (req, res) => {
 app.get('/api/orders/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
-    const orders = await db.all(
-      'SELECT id, customer_id as customerId, customer_name as customer, cook_name as cook, items, food_category as foodCategory, price, delivery_fee as deliveryFee, status, ordered_at as orderedAt, delivery_address as deliveryAddress, estimated_delivery as estimatedDelivery FROM orders WHERE customer_id = ? ORDER BY ordered_at DESC',
+    const result = await pool.query(
+      'SELECT id, customer_id as "customerId", customer_name as "customer", cook_name as "cook", items, food_category as "foodCategory", price, delivery_fee as "deliveryFee", status, ordered_at as "orderedAt", delivery_address as "deliveryAddress", estimated_delivery as "estimatedDelivery" FROM orders WHERE customer_id = $1 ORDER BY ordered_at DESC',
       [userId.toUpperCase()]
     );
-    res.json({ orders });
+    res.json({ orders: result.rows });
   } catch (error) {
     console.error('Get orders error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -185,10 +176,10 @@ app.get('/api/orders/:userId', async (req, res) => {
 
 app.get('/api/orders/all', async (req, res) => {
   try {
-    const orders = await db.all(
-      'SELECT id, customer_id as customerId, customer_name as customer, cook_name as cook, items, food_category as foodCategory, price, delivery_fee as deliveryFee, status, ordered_at as orderedAt, delivery_address as deliveryAddress, estimated_delivery as estimatedDelivery FROM orders ORDER BY ordered_at DESC'
+    const result = await pool.query(
+      'SELECT id, customer_id as "customerId", customer_name as "customer", cook_name as "cook", items, food_category as "foodCategory", price, delivery_fee as "deliveryFee", status, ordered_at as "orderedAt", delivery_address as "deliveryAddress", estimated_delivery as "estimatedDelivery" FROM orders ORDER BY ordered_at DESC'
     );
-    res.json({ orders });
+    res.json({ orders: result.rows });
   } catch (error) {
     console.error('Get all orders error:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -198,10 +189,11 @@ app.get('/api/orders/all', async (req, res) => {
 app.get('/api/orders/order/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const order = await db.get(
-      'SELECT id, customer_id as customerId, customer_name as customer, cook_name as cook, items, food_category as foodCategory, price, delivery_fee as deliveryFee, status, ordered_at as orderedAt, delivery_address as deliveryAddress, estimated_delivery as estimatedDelivery FROM orders WHERE id = ?',
+    const result = await pool.query(
+      'SELECT id, customer_id as "customerId", customer_name as "customer", cook_name as "cook", items, food_category as "foodCategory", price, delivery_fee as "deliveryFee", status, ordered_at as "orderedAt", delivery_address as "deliveryAddress", estimated_delivery as "estimatedDelivery" FROM orders WHERE id = $1',
       [id]
     );
+    const order = result.rows[0];
     if (order) {
       res.json({ order });
     } else {
@@ -217,7 +209,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
   try {
-    await db.run('UPDATE orders SET status = ? WHERE id = ?', [status, id]);
+    await pool.query('UPDATE orders SET status = $1 WHERE id = $2', [status, id]);
     res.json({ success: true, message: 'Status updated' });
   } catch (error) {
     console.error('Update status error:', error);
