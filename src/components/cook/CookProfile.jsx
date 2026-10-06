@@ -11,9 +11,33 @@ export default function CookProfile({ user }) {
   const [kitchenCuisine, setKitchenCuisine] = useState(mockCook?.cuisine || 'North Indian Homestyle');
   const [isSaving, setIsSaving] = useState(false);
 
-  const savedLat = localStorage.getItem(`cook_lat_${user?.uniqueId}`);
-  const savedLng = localStorage.getItem(`cook_lng_${user?.uniqueId}`);
-  const gpsLocation = savedLat && savedLng ? `${parseFloat(savedLat).toFixed(4)}, ${parseFloat(savedLng).toFixed(4)}` : 'Location Offline (Visit Dashboard to sync)';
+  const [locationName, setLocationName] = useState('Fetching live location...');
+  
+  useEffect(() => {
+    const savedLat = localStorage.getItem(`cook_lat_${user?.uniqueId}`);
+    const savedLng = localStorage.getItem(`cook_lng_${user?.uniqueId}`);
+    
+    if (savedLat && savedLng) {
+      // Reverse geocoding using OSM Nominatim
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${savedLat}&lon=${savedLng}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.address) {
+            const city = data.address.city || data.address.town || data.address.village || data.address.county || '';
+            const neighbourhood = data.address.neighbourhood || data.address.suburb || data.address.state_district || '';
+            const name = [neighbourhood, city].filter(Boolean).join(', ');
+            setLocationName(name || 'Location recognized');
+          } else {
+            setLocationName(`${parseFloat(savedLat).toFixed(4)}, ${parseFloat(savedLng).toFixed(4)}`);
+          }
+        })
+        .catch(() => {
+          setLocationName(`${parseFloat(savedLat).toFixed(4)}, ${parseFloat(savedLng).toFixed(4)}`);
+        });
+    } else {
+      setLocationName('Location Offline (Visit Dashboard to sync)');
+    }
+  }, [user]);
 
   useEffect(() => {
     // Load existing profile from backend
@@ -149,7 +173,7 @@ export default function CookProfile({ user }) {
             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>Live GPS Location</label>
             <div style={{ width: '100%', padding: '12px 16px', border: '1px solid #CBD5E1', borderRadius: 'var(--radius-sm)', background: '#F8FAFC', color: '#475569', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Store size={18} color="#059669" />
-              {gpsLocation}
+              {locationName}
             </div>
           </div>
           <div>
