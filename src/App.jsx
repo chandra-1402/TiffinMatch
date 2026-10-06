@@ -9,6 +9,7 @@ import CookHome from './components/cook/CookHome';
 import CookCapacity from './components/cook/CookCapacity';
 import CookOrders from './components/cook/CookOrders';
 import CookEarnings from './components/cook/CookEarnings';
+import CookProfile from './components/cook/CookProfile';
 import AdminSafetyDashboard from './components/AdminSafetyDashboard';
 import CookProfileModal from './components/CookProfileModal';
 import CartModal from './components/CartModal';
@@ -375,6 +376,10 @@ export default function App() {
 
         {currentView === 'cook-earnings' && (
           currentUser?.role === 'cook' ? <CookEarnings user={currentUser} orders={orders} /> : <AccessDenied portalName="Cook Portal" user={currentUser} onOpenLogin={() => handleOpenAuthModal('cook')} onReturnToDashboard={() => setCurrentView('landing')} />
+        )}
+
+        {currentView === 'cook-profile' && (
+          currentUser?.role === 'cook' ? <CookProfile user={currentUser} /> : <AccessDenied portalName="Cook Portal" user={currentUser} onOpenLogin={() => handleOpenAuthModal('cook')} onReturnToDashboard={() => setCurrentView('landing')} />
         )}
 
         {/* Admin Safety Dashboard: STRICTLY GUARDED */}

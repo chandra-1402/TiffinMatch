@@ -261,51 +261,6 @@ export default function CookCapacity({ user, orders }) {
           )}
         </div>
       </div>
-      
-      {/* Storefront Profile Section */}
-      <div className="capacity-controller-box" style={{ width: '100%' }}>
-        <h3 style={{ fontSize: '1.25rem', color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-          <Store size={20} color="#059669" />
-          Storefront Profile
-        </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: '#1E293B', marginBottom: '6px' }}>Kitchen Name</label>
-            <input 
-              type="text" 
-              value={kitchenName} 
-              onChange={(e) => setKitchenName(e.target.value)} 
-              style={{ width: '100%', padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 'var(--radius-sm)', outline: 'none' }} 
-              placeholder="e.g. Maa Ki Rasoi" 
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: '#1E293B', marginBottom: '6px' }}>Cover Image URL</label>
-            <input 
-              type="text" 
-              value={kitchenLogo} 
-              onChange={(e) => setKitchenLogo(e.target.value)} 
-              style={{ width: '100%', padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 'var(--radius-sm)', outline: 'none' }} 
-              placeholder="https://example.com/logo.jpg" 
-            />
-          </div>
-          <div>
-            <label style={{ display: 'block', fontSize: '0.86rem', fontWeight: 600, color: '#1E293B', marginBottom: '6px' }}>Specialty / Cuisine</label>
-            <input 
-              type="text" 
-              value={kitchenCuisine} 
-              onChange={(e) => setKitchenCuisine(e.target.value)} 
-              style={{ width: '100%', padding: '10px 14px', border: '1px solid #E2E8F0', borderRadius: 'var(--radius-sm)', outline: 'none' }} 
-              placeholder="e.g. Authentic North Indian" 
-            />
-          </div>
-          <button style={{ background: '#0F172A', color: 'white', padding: '10px 16px', borderRadius: 'var(--radius-sm)', border: 'none', fontWeight: 600, cursor: 'pointer', marginTop: '8px' }}>
-            Save Profile
-          </button>
-        </div>
-      </div>
-      
-      </div>
     </div>
   );
 }

@@ -123,6 +123,12 @@ export default function Navbar({
               >
                 Earnings
               </button>
+              <button 
+                className={`nav-link-btn ${currentView === 'cook-profile' ? 'active' : ''}`}
+                onClick={() => setCurrentView('cook-profile')}
+              >
+                Store Profile
+              </button>
             </>
           )}
 
