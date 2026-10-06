@@ -22,24 +22,24 @@ export default function CookCapacity({ user, orders }) {
   const [newItemPrice, setNewItemPrice] = useState('');
   const [newItemCategory, setNewItemCategory] = useState('Mains');
 
-  // Live GPS State
+  // Kitchen Location State
   const [liveLocation, setLiveLocation] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     setIsLocating(true);
     if (navigator.geolocation) {
-      const watchId = navigator.geolocation.watchPosition(
+      navigator.geolocation.getCurrentPosition(
         (position) => {
           const loc = [position.coords.latitude, position.coords.longitude];
           setLiveLocation(loc);
-          // Sync with real backend for cross-device support
+          // Sync with real backend for cross-device support (Setting fixed location)
           if (user?.uniqueId) {
             fetch('http://localhost:3001/api/cooks/location', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ uniqueId: user.uniqueId, lat: loc[0], lng: loc[1] })
-            }).catch(e => console.error('Failed to sync GPS:', e));
+            }).catch(e => console.error('Failed to sync location:', e));
           }
           setIsLocating(false);
         },
@@ -47,9 +47,8 @@ export default function CookCapacity({ user, orders }) {
           console.error("GPS Error:", error);
           setIsLocating(false);
         },
-        { enableHighAccuracy: true, maximumAge: 0 }
+        { enableHighAccuracy: true }
       );
-      return () => navigator.geolocation.clearWatch(watchId);
     } else {
       setIsLocating(false);
     }
@@ -100,23 +99,22 @@ export default function CookCapacity({ user, orders }) {
         </div>
       </div>
       
-      {/* Live GPS Broadcast Strip */}
-      <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 'var(--radius-sm)', padding: '12px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+      {/* Fixed Kitchen Location Strip */}
+      <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 'var(--radius-sm)', padding: '12px 20px', marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: '#3B82F6', borderRadius: '50%', padding: '8px' }}>
-            <Navigation size={18} color="#ffffff" />
+          <div style={{ background: '#475569', borderRadius: '50%', padding: '8px' }}>
+            <MapPin size={18} color="#ffffff" />
           </div>
           <div>
-            <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#1E3A8A' }}>Live Kitchen GPS Broadcast</h4>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: '#60A5FA', marginTop: '2px' }}>
-              Broadcasting your location to customers within a 20km radius.
+            <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#1E293B' }}>Registered Kitchen Location</h4>
+            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', marginTop: '2px' }}>
+              Your kitchen's fixed location. Customers within 20km can match with you.
             </p>
           </div>
         </div>
-        <div style={{ background: '#ffffff', padding: '8px 16px', borderRadius: '99px', fontSize: '0.85rem', fontWeight: 600, color: '#2563EB', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #BFDBFE' }}>
-          <MapPin size={16} />
-          {isLocating ? 'Acquiring GPS Signal...' : liveLocation ? `${liveLocation[0].toFixed(4)}, ${liveLocation[1].toFixed(4)}` : 'GPS Offline'}
-          {liveLocation && <span style={{ width: '8px', height: '8px', background: '#10B981', borderRadius: '50%', marginLeft: '4px', animation: 'pulse 2s infinite' }}></span>}
+        <div style={{ background: '#ffffff', padding: '8px 16px', borderRadius: '99px', fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px', border: '1px solid #CBD5E1' }}>
+          <Navigation size={16} color="#64748B" />
+          {isLocating ? 'Acquiring Location...' : liveLocation ? `${liveLocation[0].toFixed(4)}, ${liveLocation[1].toFixed(4)}` : 'Location Offline'}
         </div>
       </div>
 
