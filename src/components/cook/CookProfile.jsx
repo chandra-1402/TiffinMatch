@@ -74,47 +74,60 @@ export default function CookProfile({ user }) {
         
         {/* Profile Avatar / Logo Upload */}
         <div style={{ marginBottom: '24px', position: 'relative', display: 'inline-block' }}>
-          <div 
-            onClick={() => {
-              const url = prompt("Enter a new image URL for your profile:", kitchenLogo);
-              if (url !== null) setKitchenLogo(url);
+          <input 
+            type="file" 
+            id="profile-upload" 
+            accept="image/*" 
+            style={{ display: 'none' }} 
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                  setKitchenLogo(event.target.result);
+                };
+                reader.readAsDataURL(file);
+              }
             }}
-            style={{
-              width: '120px', 
-              height: '120px', 
-              borderRadius: '50%', 
-              background: '#F1F5F9',
-              border: '3px solid #059669',
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto',
-              cursor: 'pointer',
-              position: 'relative'
-            }}
-            title="Click to change profile picture"
-          >
-            {kitchenLogo ? (
-              <img src={kitchenLogo} alt="Kitchen Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <Store size={48} color="#94A3B8" />
-            )}
-            
-            {/* Overlay icon to hint it's clickable */}
-            <div style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: 'rgba(0,0,0,0.5)',
-              padding: '6px 0',
-              display: 'flex',
-              justifyContent: 'center'
-            }}>
-              <Camera size={16} color="white" />
+          />
+          <label htmlFor="profile-upload" style={{ display: 'block', cursor: 'pointer' }}>
+            <div 
+              style={{
+                width: '120px', 
+                height: '120px', 
+                borderRadius: '50%', 
+                background: '#F1F5F9',
+                border: '3px solid #059669',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
+                position: 'relative'
+              }}
+              title="Click to upload profile picture"
+            >
+              {kitchenLogo ? (
+                <img src={kitchenLogo} alt="Kitchen Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <Store size={48} color="#94A3B8" />
+              )}
+              
+              {/* Overlay icon to hint it's clickable */}
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: 'rgba(0,0,0,0.5)',
+                padding: '6px 0',
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                <Camera size={16} color="white" />
+              </div>
             </div>
-          </div>
+          </label>
         </div>
         
         <h3 style={{ fontSize: '1.4rem', color: '#0F172A', marginBottom: '8px' }}>Storefront Profile</h3>
