@@ -56,6 +56,8 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  -webkit-user-select: auto;
+  user-select: auto;
 }
 
 h1, h2, h3, h4, h5, h6 {
