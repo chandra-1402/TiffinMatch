@@ -9,6 +9,7 @@ export default function CookProfile({ user }) {
   const [kitchenName, setKitchenName] = useState(mockCook?.name || user?.name || 'My Kitchen');
   const [kitchenLogo, setKitchenLogo] = useState(mockCook?.image || '');
   const [kitchenCuisine, setKitchenCuisine] = useState(mockCook?.cuisine || 'North Indian Homestyle');
+  const [kitchenLocality, setKitchenLocality] = useState(mockCook?.locality || '');
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function CookProfile({ user }) {
             setKitchenName(data[user.uniqueId].kitchenName || mockCook?.name || user.name);
             setKitchenLogo(data[user.uniqueId].kitchenLogo || mockCook?.image || '');
             setKitchenCuisine(data[user.uniqueId].kitchenCuisine || mockCook?.cuisine || 'North Indian Homestyle');
+            setKitchenLocality(data[user.uniqueId].kitchenLocality || mockCook?.locality || '');
           }
         })
         .catch(err => console.error("Failed to load profile", err));
@@ -39,7 +41,8 @@ export default function CookProfile({ user }) {
         uniqueId: user.uniqueId,
         kitchenName,
         kitchenLogo,
-        kitchenCuisine
+        kitchenCuisine,
+        kitchenLocality
       })
     })
     .then(res => res.json())
@@ -71,23 +74,46 @@ export default function CookProfile({ user }) {
         
         {/* Profile Avatar / Logo Upload */}
         <div style={{ marginBottom: '24px', position: 'relative', display: 'inline-block' }}>
-          <div style={{
-            width: '120px', 
-            height: '120px', 
-            borderRadius: '50%', 
-            background: '#F1F5F9',
-            border: '3px solid #059669',
-            overflow: 'hidden',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto'
-          }}>
+          <div 
+            onClick={() => {
+              const url = prompt("Enter a new image URL for your profile:", kitchenLogo);
+              if (url !== null) setKitchenLogo(url);
+            }}
+            style={{
+              width: '120px', 
+              height: '120px', 
+              borderRadius: '50%', 
+              background: '#F1F5F9',
+              border: '3px solid #059669',
+              overflow: 'hidden',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
+              cursor: 'pointer',
+              position: 'relative'
+            }}
+            title="Click to change profile picture"
+          >
             {kitchenLogo ? (
               <img src={kitchenLogo} alt="Kitchen Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               <Store size={48} color="#94A3B8" />
             )}
+            
+            {/* Overlay icon to hint it's clickable */}
+            <div style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'rgba(0,0,0,0.5)',
+              padding: '6px 0',
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <Camera size={16} color="white" />
+            </div>
           </div>
         </div>
         
@@ -106,13 +132,13 @@ export default function CookProfile({ user }) {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>Cover Image URL</label>
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>Locality / Area</label>
             <input 
               type="text" 
-              value={kitchenLogo} 
-              onChange={(e) => setKitchenLogo(e.target.value)} 
+              value={kitchenLocality} 
+              onChange={(e) => setKitchenLocality(e.target.value)} 
               style={{ width: '100%', padding: '12px 16px', border: '1px solid #E2E8F0', borderRadius: 'var(--radius-sm)', outline: 'none', fontSize: '1rem' }} 
-              placeholder="Paste an image link..." 
+              placeholder="e.g. Koramangala 5th Block" 
             />
           </div>
           <div>

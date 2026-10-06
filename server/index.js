@@ -233,9 +233,9 @@ app.get('/api/cooks/location', (req, res) => {
 });
 
 app.post('/api/cooks/profile', (req, res) => {
-  const { uniqueId, kitchenName, kitchenLogo, kitchenCuisine } = req.body;
+  const { uniqueId, kitchenName, kitchenLogo, kitchenCuisine, kitchenLocality } = req.body;
   if (!uniqueId) return res.status(400).json({ error: 'Missing uniqueId' });
-  cookProfiles[uniqueId] = { kitchenName, kitchenLogo, kitchenCuisine };
+  cookProfiles[uniqueId] = { kitchenName, kitchenLogo, kitchenCuisine, kitchenLocality };
   res.json({ success: true });
 });
 

@@ -33,11 +33,37 @@ export default function CookCapacity({ user, orders }) {
 
   useEffect(() => {
     setIsLocating(true);
+
+    // Don't ask again if we already have it saved
+    const savedLat = localStorage.getItem(`cook_lat_${user?.uniqueId}`);
+    const savedLng = localStorage.getItem(`cook_lng_${user?.uniqueId}`);
+
+    if (savedLat && savedLng) {
+      const loc = [parseFloat(savedLat), parseFloat(savedLng)];
+      setLiveLocation(loc);
+      setIsLocating(false);
+      // Sync silently
+      if (user?.uniqueId) {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        fetch(`${apiUrl}/api/cooks/location`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uniqueId: user.uniqueId, lat: loc[0], lng: loc[1] })
+        }).catch(e => console.error('Failed to sync location:', e));
+      }
+      return;
+    }
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const loc = [position.coords.latitude, position.coords.longitude];
           setLiveLocation(loc);
+          
+          // Save to local storage so we don't ask next time
+          localStorage.setItem(`cook_lat_${user?.uniqueId}`, loc[0]);
+          localStorage.setItem(`cook_lng_${user?.uniqueId}`, loc[1]);
+
           // Sync with real backend for cross-device support (Setting fixed location)
           if (user?.uniqueId) {
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
