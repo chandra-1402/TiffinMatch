@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { HOME_COOKS } from '../data/mockData';
 import { MapPin, Star } from 'lucide-react';
 
 // Fix for default leaflet icons not showing up due to webpack issues in standard React
@@ -19,7 +18,7 @@ function MapUpdater({ center }) {
   return null;
 }
 
-export default function KitchenMap({ userLocation, onSelectCook }) {
+export default function KitchenMap({ userLocation, onSelectCook, cooks = [] }) {
   // Cook Icon - simple div icon with emoji
   const cookIcon = new L.DivIcon({
     className: 'custom-leaflet-icon',
@@ -47,7 +46,7 @@ export default function KitchenMap({ userLocation, onSelectCook }) {
         </Marker>
 
         {/* Home Cooks Locations */}
-        {HOME_COOKS.map(cook => {
+        {cooks.map(cook => {
           if (!cook.lat || !cook.lng) return null;
           return (
             <Marker 

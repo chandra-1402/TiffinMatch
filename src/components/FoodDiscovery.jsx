@@ -12,17 +12,54 @@ import {
 } from 'lucide-react';
 import { HOME_COOKS, CATEGORIES } from '../data/mockData';
 
+// Utility function to calculate distance in km
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c;
+}
+
 export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
+  const [userLocation, setUserLocation] = useState([12.9352, 77.6245]); // Default
+
+  React.useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation([position.coords.latitude, position.coords.longitude]);
+        },
+        (error) => console.error(error),
+        { enableHighAccuracy: true }
+      );
+    }
+  }, []);
+
   const [dietFilter, setDietFilter] = useState('all');
   const [cuisineFilter, setCuisineFilter] = useState('all');
   const [maxPrice, setMaxPrice] = useState(150);
-  const [maxDistance, setMaxDistance] = useState(3.0);
+  const [maxDistance, setMaxDistance] = useState(20.0);
   const [minRating, setMinRating] = useState(4.5);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recommended');
 
-  const filteredCooks = HOME_COOKS.filter(cook => {
+  const processedCooks = HOME_COOKS.map(cook => ({
+    ...cook,
+    realDistance: getDistanceFromLatLonInKm(userLocation[0], userLocation[1], cook.lat, cook.lng)
+  }));
+
+  const isAnyCookWithin20Km = processedCooks.some(c => c.realDistance <= 20);
+
+  const filteredCooks = processedCooks.filter(cook => {
+    // Hard cutoff if totally out of range
+    if (cook.realDistance > 20) return false;
+
     // Diet filter
     if (dietFilter === 'pure-jain' && cook.dietType !== 'pure-jain') return false;
     
@@ -31,8 +68,8 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
       return false;
     }
 
-    // Distance filter
-    if (cook.distanceKm > maxDistance) return false;
+    // Distance filter (UI slider)
+    if (cook.realDistance > maxDistance) return false;
 
     // Rating filter
     if (cook.rating < minRating) return false;
@@ -49,7 +86,7 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
 
     return true;
   }).sort((a, b) => {
-    if (sortBy === 'distance') return a.distanceKm - b.distanceKm;
+    if (sortBy === 'distance') return a.realDistance - b.realDistance;
     if (sortBy === 'rating') return b.rating - a.rating;
     if (sortBy === 'capacity') return b.availableCapacity - a.availableCapacity;
     return 0; // recommended default
@@ -145,9 +182,9 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
             <label className="filter-label">Max Distance: {maxDistance} km</label>
             <input 
               type="range" 
-              min="0.5" 
-              max="5.0" 
-              step="0.5"
+              min="1" 
+              max="20" 
+              step="1"
               value={maxDistance}
               onChange={(e) => setMaxDistance(parseFloat(e.target.value))}
               style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
@@ -188,7 +225,24 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
       </div>
 
       {/* Cooks Grid */}
-      {filteredCooks.length === 0 ? (
+      {!isAnyCookWithin20Km ? (
+        <div 
+          style={{ 
+            background: '#F8FAFC', 
+            borderRadius: 'var(--radius-lg)', 
+            padding: '64px 24px', 
+            textAlign: 'center',
+            border: '1px solid #E2E8F0',
+            marginTop: '20px'
+          }}
+        >
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>📍</div>
+          <h3 style={{ fontSize: '1.6rem', color: '#0F172A', marginBottom: '12px' }}>Service Not Available Here</h3>
+          <p style={{ color: '#64748B', fontSize: '1.05rem', maxWidth: '500px', margin: '0 auto', lineHeight: '1.6' }}>
+            We currently don't have any verified home kitchens within a 20km radius of your location. But don't worry, we are expanding quickly and coming to your area soon!
+          </p>
+        </div>
+      ) : filteredCooks.length === 0 ? (
         <div 
           style={{ 
             background: '#ffffff', 
@@ -240,7 +294,7 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
                 </div>
 
                 <div className="cook-locality-row">
-                  <span>📍 {cook.distanceKm} km</span>
+                  <span>📍 {cook.realDistance.toFixed(1)} km</span>
                   <span>•</span>
                   <span>{cook.locality}</span>
                 </div>

@@ -17,6 +17,19 @@ import {
 import { CATEGORIES, HOME_COOKS } from '../data/mockData';
 import KitchenMap from './KitchenMap';
 
+// Utility function to calculate distance in km
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c;
+}
+
 export default function CustomerDashboard({ 
   user, 
   setCurrentView, 
@@ -31,17 +44,53 @@ export default function CustomerDashboard({
   const [userLocation, setUserLocation] = useState([12.9352, 77.6245]); // Default Koramangala
 
   const handleUpdateLocation = () => {
+    if (addressInput === 'Current GPS Location') {
+      return; // Location is already set correctly via GPS
+    }
     // Basic mock geocoding logic for demonstration
     const addr = addressInput.toLowerCase();
     if (addr.includes('hsr')) setUserLocation([12.9121, 77.6446]);
     else if (addr.includes('btm')) setUserLocation([12.9166, 77.6101]);
     else if (addr.includes('jayanagar')) setUserLocation([12.9299, 77.5826]);
     else if (addr.includes('indiranagar')) setUserLocation([12.9784, 77.6408]);
-    else setUserLocation([12.9352, 77.6245]); // default
+    else if (addr.trim() !== '') setUserLocation([12.9352, 77.6245]); // default only if they typed a string not found
   };
 
-  // Filter cooks based on category and search
+  const handleGetLiveGPS = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation([position.coords.latitude, position.coords.longitude]);
+          setAddressInput('Current GPS Location');
+        },
+        (error) => console.error("Error getting live GPS: ", error),
+        { enableHighAccuracy: true }
+      );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+    }
+  };
+
+  // Automatically fetch GPS on mount
+  React.useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation([position.coords.latitude, position.coords.longitude]);
+          setAddressInput('Current GPS Location');
+        },
+        (error) => console.error("Error fetching initial GPS: ", error),
+        { enableHighAccuracy: true }
+      );
+    }
+  }, []);
+
+  // Filter cooks based on distance, category and search
   const filteredCooks = HOME_COOKS.filter(cook => {
+    // 1. Distance check (max 20km)
+    const distance = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], cook.lat, cook.lng);
+    if (distance > 20) return false;
+
     const matchesSearch = cook.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           cook.cuisine.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           cook.locality.toLowerCase().includes(searchQuery.toLowerCase());
@@ -55,6 +104,10 @@ export default function CustomerDashboard({
     if (selectedCategory === 'traditional') return matchesSearch;
     return matchesSearch;
   });
+
+  // Check if AI recommended cook is near
+  const recommendedCook = HOME_COOKS[0];
+  const isRecommendedCookNear = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], recommendedCook.lat, recommendedCook.lng) <= 20;
 
   // Get user orders (filter by customerId or customer name for backwards compatibility with mock data)
   const userOrders = orders.filter(
@@ -88,8 +141,8 @@ export default function CustomerDashboard({
 
       {/* ================= DELIVERY LOCATION & MAP ================= */}
       <div style={{ marginBottom: '40px', background: '#F8FAFC', padding: '24px', borderRadius: 'var(--radius-lg)', border: '1px solid #E2E8F0' }}>
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
-          <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, position: 'relative', minWidth: '300px' }}>
             <MapPin size={18} color="#94A3B8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
             <input 
               type="text" 
@@ -99,6 +152,9 @@ export default function CustomerDashboard({
               style={{ width: '100%', padding: '14px 16px 14px 44px', borderRadius: 'var(--radius-md)', border: '1px solid #CBD5E1', fontSize: '1rem', outline: 'none' }}
             />
           </div>
+          <button className="btn-secondary" onClick={handleGetLiveGPS} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 20px', background: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1' }}>
+            <MapPin size={18} /> Use Live GPS
+          </button>
           <button className="btn-primary" onClick={handleUpdateLocation} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 24px' }}>
             <Navigation size={18} /> Find Kitchens
           </button>
@@ -107,6 +163,7 @@ export default function CustomerDashboard({
         <KitchenMap 
           userLocation={userLocation} 
           onSelectCook={onSelectCook}
+          cooks={filteredCooks}
         />
       </div>
 
@@ -154,10 +211,15 @@ export default function CustomerDashboard({
           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
             <div className="ai-price-tag">₹90</div>
             <button 
-              className="btn-primary"
-              onClick={() => onQuickOrderThali(HOME_COOKS[0])}
+              className={`btn-primary ${!isRecommendedCookNear ? 'disabled' : ''}`}
+              onClick={() => isRecommendedCookNear && onQuickOrderThali(recommendedCook)}
+              disabled={!isRecommendedCookNear}
+              style={{
+                opacity: isRecommendedCookNear ? 1 : 0.5,
+                cursor: isRecommendedCookNear ? 'pointer' : 'not-allowed'
+              }}
             >
-              Order Now
+              {isRecommendedCookNear ? 'Order Now' : 'Out of Area'}
             </button>
           </div>
         </div>
@@ -212,8 +274,17 @@ export default function CustomerDashboard({
       </div>
 
       {/* ================= HOME COOK CARDS GRID ================= */}
-      <div className="cooks-grid">
-        {filteredCooks.map(cook => (
+      {filteredCooks.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '60px 20px', background: '#F8FAFC', borderRadius: 'var(--radius-lg)', border: '1px solid #E2E8F0', marginTop: '24px' }}>
+          <MapPin size={48} color="#94A3B8" style={{ margin: '0 auto 16px auto' }} />
+          <h3 style={{ fontSize: '1.4rem', color: '#334155', marginBottom: '8px' }}>Service Not Available Here</h3>
+          <p style={{ color: '#64748B', maxWidth: '400px', margin: '0 auto', lineHeight: '1.5' }}>
+            We currently don't have any verified home kitchens within a 20km radius of your location. But don't worry, we are expanding quickly and coming to your area soon!
+          </p>
+        </div>
+      ) : (
+        <div className="cooks-grid">
+          {filteredCooks.map(cook => (
           <div key={cook.id} className="cook-card">
             <div className="cook-card-image-wrap">
               <img 
@@ -269,7 +340,8 @@ export default function CustomerDashboard({
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* ================= STUDENT SUBSCRIPTION MEAL PASS BANNER ================= */}
       <div 

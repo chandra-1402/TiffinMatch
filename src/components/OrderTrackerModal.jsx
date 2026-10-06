@@ -10,12 +10,66 @@ import {
   Phone,
   ShieldCheck
 } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+
+// Fix for default leaflet icons
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+});
+
+// Rider icon
+const riderIcon = new L.DivIcon({
+  className: 'custom-leaflet-icon',
+  html: '<div style="background: #FF5520; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">🛵</div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30]
+});
+
+// Home icon for customer
+const homeIcon = new L.DivIcon({
+  className: 'custom-leaflet-icon',
+  html: '<div style="background: #10B981; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">🏠</div>',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30]
+});
+
+// Component to dynamically recenter map
+function MapUpdater({ center }) {
+  const map = useMap();
+  map.setView(center, map.getZoom());
+  return null;
+}
 
 export default function OrderTrackerModal({ order, onClose }) {
   if (!order) return null;
 
   const [step, setStep] = useState(1);
   const [liveOrder, setLiveOrder] = useState(order);
+
+  // States for live GPS coordinates
+  const [customerLocation, setCustomerLocation] = useState([12.9716, 77.5946]);
+  const [riderLocation, setRiderLocation] = useState([12.9600, 77.5900]);
+
+  // Fetch actual GPS location for the customer
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setCustomerLocation([lat, lng]);
+          // For demo purposes, start the rider slightly away from the real GPS location
+          setRiderLocation([lat - 0.015, lng - 0.015]);
+        },
+        (err) => console.error("Error getting location: ", err),
+        { enableHighAccuracy: true }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     // Initial fetch and polling every 3 seconds
@@ -43,6 +97,21 @@ export default function OrderTrackerModal({ order, onClose }) {
 
     return () => clearInterval(interval);
   }, [order.id]);
+
+  // Simulate rider movement towards customer
+  useEffect(() => {
+    if (step >= 4) {
+      const moveInterval = setInterval(() => {
+        setRiderLocation(prev => {
+          // Move 10% closer each tick
+          const newLat = prev[0] + (customerLocation[0] - prev[0]) * 0.1;
+          const newLng = prev[1] + (customerLocation[1] - prev[1]) * 0.1;
+          return [newLat, newLng];
+        });
+      }, 2000);
+      return () => clearInterval(moveInterval);
+    }
+  }, [step]);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -153,6 +222,32 @@ export default function OrderTrackerModal({ order, onClose }) {
             </div>
           </div>
         </div>
+
+        {/* Live Map Tracking (Only visible when rider dispatched) */}
+        {step >= 4 && (
+          <div style={{ marginTop: '24px' }}>
+            <h3 style={{ fontSize: '1rem', color: '#0F172A', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <MapPin size={18} color="#FF5520" /> Live GPS Tracking
+            </h3>
+            <div style={{ height: '200px', width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid #E2E8F0', zIndex: 1 }}>
+              <MapContainer center={riderLocation} zoom={14} style={{ height: '100%', width: '100%' }}>
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <MapUpdater center={riderLocation} />
+                
+                <Marker position={customerLocation} icon={homeIcon}>
+                  <Popup>Delivery Location</Popup>
+                </Marker>
+                
+                <Marker position={riderLocation} icon={riderIcon}>
+                  <Popup>Rider is on the way!</Popup>
+                </Marker>
+              </MapContainer>
+            </div>
+          </div>
+        )}
 
         {/* Order Details Summary */}
         <div style={{ background: '#FAF8F5', border: '1px solid #EBE5DB', borderRadius: 'var(--radius-sm)', padding: '14px 18px', marginTop: '20px', fontSize: '0.84rem' }}>

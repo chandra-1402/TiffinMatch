@@ -16,7 +16,21 @@ import {
 import confetti from 'canvas-confetti';
 import { HOME_COOKS } from '../data/mockData';
 
+// Utility function to calculate distance in km
+function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2); 
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+  return R * c;
+}
+
 export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
+  const [userLocation, setUserLocation] = useState([12.9352, 77.6245]); // Default
   const [diet, setDiet] = useState('Vegetarian');
   const [mealType, setMealType] = useState('Lunch');
   const [budget, setBudget] = useState(120);
@@ -27,8 +41,45 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
   const [matchState, setMatchState] = useState('input');
   const [activeStep, setActiveStep] = useState(0);
 
-  const matchedCook = HOME_COOKS[0]; // Maa Ki Rasoi
-  const matchedMeal = matchedCook.menu.find(m => m.isThali) || matchedCook.menu[4];
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation([position.coords.latitude, position.coords.longitude]);
+        },
+        (error) => console.error(error),
+        { enableHighAccuracy: true }
+      );
+    }
+  }, []);
+
+  const matchResult = React.useMemo(() => {
+    let availableCooks = HOME_COOKS.map(c => {
+      const actualDistance = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], c.lat, c.lng);
+      return { ...c, distanceKm: actualDistance.toFixed(1) };
+    }).filter(c => parseFloat(c.distanceKm) <= maxDistance && c.availableCapacity > 0);
+
+    if (diet === 'Jain Pure Veg') {
+      availableCooks = availableCooks.filter(c => c.dietType === 'pure-jain');
+    } else if (diet === 'High Protein') {
+      availableCooks = availableCooks.filter(c => c.cuisine.includes('Protein') || c.dietType === 'protein'); 
+    } else if (diet === 'Vegetarian') {
+      availableCooks = availableCooks.filter(c => c.dietType === 'veg' || c.dietType === 'pure-jain');
+    } else if (diet === 'Non-Vegetarian') {
+      availableCooks = availableCooks.filter(c => c.dietType === 'non-veg');
+    }
+
+    for (let cook of availableCooks) {
+      const affordableMeal = cook.menu.find(m => m.price <= budget && (m.isThali || m.category === 'Mains'));
+      if (affordableMeal) {
+        return { cook, meal: affordableMeal };
+      }
+    }
+    return null;
+  }, [maxDistance, budget, diet, userLocation]);
+
+  const matchedCook = matchResult?.cook;
+  const matchedMeal = matchResult?.meal;
 
   // Quick prompt presets
   const applyPreset = (presetDiet, presetBudget, presetType) => {
@@ -47,14 +98,16 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
     setTimeout(() => setActiveStep(4), 3300);
     setTimeout(() => {
       setMatchState('result');
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 }
-        });
-      } catch (e) {
-        // Fallback gracefully if confetti unavailable
+      if (matchResult) {
+        try {
+          confetti({
+            particleCount: 80,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        } catch (e) {
+          // Fallback gracefully if confetti unavailable
+        }
       }
     }, 4400);
   };
@@ -67,18 +120,20 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
   return (
     <div className="container ai-matching-container">
       {/* Header */}
-      <div className="ai-match-header">
-        <div className="ai-match-badge">
-          <Sparkles size={16} />
-          Predictive Kitchen Capacity Engine
+      {matchState === 'input' && (
+        <div className="ai-match-header">
+          <div className="ai-match-badge">
+            <Sparkles size={16} />
+            Predictive Kitchen Capacity Engine
+          </div>
+          <h1 className="ai-match-title">
+            TiffinMatch AI Matchmaker
+          </h1>
+          <p className="ai-match-subtitle">
+            Tell AI your meal cravings & budget. We automatically find the best neighborhood home cook with available stove capacity.
+          </p>
         </div>
-        <h1 className="ai-match-title">
-          TiffinMatch AI Matchmaker
-        </h1>
-        <p className="ai-match-subtitle">
-          Tell AI your meal cravings & budget. We automatically find the best neighborhood home cook with available stove capacity.
-        </p>
-      </div>
+      )}
 
       {/* STATE 1: USER INPUT & PREFERENCES */}
       {matchState === 'input' && (
@@ -282,7 +337,7 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
       )}
 
       {/* STATE 3: MATCH RESULT REVEAL */}
-      {matchState === 'result' && (
+      {matchState === 'result' && matchedCook && (
         <div className="match-result-card">
           <div className="match-score-banner">
             <div>
@@ -407,6 +462,25 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {matchState === 'result' && !matchedCook && (
+        <div className="match-result-card" style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <div style={{ fontSize: '3rem', marginBottom: '16px' }}>🍽️</div>
+          <h2 style={{ fontSize: '1.8rem', color: '#0F172A', marginBottom: '12px' }}>
+            No Kitchen Available Nearby
+          </h2>
+          <p style={{ color: '#64748B', fontSize: '1rem', marginBottom: '32px' }}>
+            We couldn't find an active home kitchen matching your criteria within {maxDistance} km. Try increasing your distance radius or budget to discover more options.
+          </p>
+          <button 
+            className="btn-ai-glow"
+            onClick={handleReset}
+          >
+            <Sliders size={18} />
+            Adjust Criteria
+          </button>
         </div>
       )}
     </div>
