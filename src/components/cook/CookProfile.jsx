@@ -9,8 +9,11 @@ export default function CookProfile({ user }) {
   const [kitchenName, setKitchenName] = useState(mockCook?.name || user?.name || 'My Kitchen');
   const [kitchenLogo, setKitchenLogo] = useState(mockCook?.image || '');
   const [kitchenCuisine, setKitchenCuisine] = useState(mockCook?.cuisine || 'North Indian Homestyle');
-  const [kitchenLocality, setKitchenLocality] = useState(mockCook?.locality || '');
   const [isSaving, setIsSaving] = useState(false);
+
+  const savedLat = localStorage.getItem(`cook_lat_${user?.uniqueId}`);
+  const savedLng = localStorage.getItem(`cook_lng_${user?.uniqueId}`);
+  const gpsLocation = savedLat && savedLng ? `${parseFloat(savedLat).toFixed(4)}, ${parseFloat(savedLng).toFixed(4)}` : 'Location Offline (Visit Dashboard to sync)';
 
   useEffect(() => {
     // Load existing profile from backend
@@ -23,7 +26,6 @@ export default function CookProfile({ user }) {
             setKitchenName(data[user.uniqueId].kitchenName || mockCook?.name || user.name);
             setKitchenLogo(data[user.uniqueId].kitchenLogo || mockCook?.image || '');
             setKitchenCuisine(data[user.uniqueId].kitchenCuisine || mockCook?.cuisine || 'North Indian Homestyle');
-            setKitchenLocality(data[user.uniqueId].kitchenLocality || mockCook?.locality || '');
           }
         })
         .catch(err => console.error("Failed to load profile", err));
@@ -41,8 +43,7 @@ export default function CookProfile({ user }) {
         uniqueId: user.uniqueId,
         kitchenName,
         kitchenLogo,
-        kitchenCuisine,
-        kitchenLocality
+        kitchenCuisine
       })
     })
     .then(res => res.json())
@@ -145,14 +146,11 @@ export default function CookProfile({ user }) {
             />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>Locality / Area</label>
-            <input 
-              type="text" 
-              value={kitchenLocality} 
-              onChange={(e) => setKitchenLocality(e.target.value)} 
-              style={{ width: '100%', padding: '12px 16px', border: '1px solid #E2E8F0', borderRadius: 'var(--radius-sm)', outline: 'none', fontSize: '1rem' }} 
-              placeholder="e.g. Koramangala 5th Block" 
-            />
+            <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>Live GPS Location</label>
+            <div style={{ width: '100%', padding: '12px 16px', border: '1px solid #CBD5E1', borderRadius: 'var(--radius-sm)', background: '#F8FAFC', color: '#475569', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Store size={18} color="#059669" />
+              {gpsLocation}
+            </div>
           </div>
           <div>
             <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>Specialty / Cuisine</label>
