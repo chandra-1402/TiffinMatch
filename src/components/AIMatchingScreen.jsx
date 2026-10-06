@@ -248,16 +248,16 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
               <input 
                 type="range" 
                 min="1.0" 
-                max="4.0" 
+                max="20.0" 
                 step="0.5"
                 value={maxDistance}
                 onChange={(e) => setMaxDistance(parseFloat(e.target.value))}
                 style={{ accentColor: 'var(--primary)', cursor: 'pointer' }}
               />
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.74rem', color: '#64748B' }}>
-                <span>1.0 km (Fastest)</span>
-                <span>2.5 km (Optimal)</span>
-                <span>4.0 km (Wider Choice)</span>
+                <span>1.0 km (Walking)</span>
+                <span>10.0 km (City)</span>
+                <span>20.0 km (Wide Radius)</span>
               </div>
             </div>
           </div>
