@@ -28,6 +28,7 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
   const [userLocation, setUserLocation] = useState([12.9352, 77.6245]); // Default
   const [liveCookLocations, setLiveCookLocations] = useState({});
+  const [cookProfiles, setCookProfiles] = useState({});
 
   React.useEffect(() => {
     if (navigator.geolocation) {
@@ -46,6 +47,11 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
       .then(res => res.json())
       .then(data => setLiveCookLocations(data))
       .catch(e => console.error('Failed to load cook GPS:', e));
+
+    fetch(`${apiUrl}/api/cooks/profiles`)
+      .then(res => res.json())
+      .then(data => setCookProfiles(data))
+      .catch(e => console.error('Failed to load cook profiles:', e));
   }, []);
 
   const [dietFilter, setDietFilter] = useState('all');
@@ -63,8 +69,17 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
     const cookLat = liveLoc ? liveLoc[0] : cook.lat;
     const cookLng = liveLoc ? liveLoc[1] : cook.lng;
 
+    // Use profile from real backend if available
+    const profile = cookProfiles[cook.uniqueId];
+    const cookName = profile?.kitchenName || cook.name;
+    const cookCuisine = profile?.kitchenCuisine || cook.cuisine;
+    const cookLogo = profile?.kitchenLogo || cook.image;
+
     return {
       ...cook,
+      name: cookName,
+      cuisine: cookCuisine,
+      image: cookLogo,
       lat: cookLat,
       lng: cookLng,
       realDistance: getDistanceFromLatLonInKm(userLocation[0], userLocation[1], cookLat, cookLng)

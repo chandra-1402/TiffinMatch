@@ -32,6 +32,7 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
   const [userLocation, setUserLocation] = useState([12.9352, 77.6245]); // Default
   const [liveCookLocations, setLiveCookLocations] = useState({});
+  const [cookProfiles, setCookProfiles] = useState({});
   const [diet, setDiet] = useState('Vegetarian');
   const [mealType, setMealType] = useState('Lunch');
   const [budget, setBudget] = useState(120);
@@ -59,6 +60,11 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
       .then(res => res.json())
       .then(data => setLiveCookLocations(data))
       .catch(e => console.error('Failed to load cook GPS:', e));
+
+    fetch(`${apiUrl}/api/cooks/profiles`)
+      .then(res => res.json())
+      .then(data => setCookProfiles(data))
+      .catch(e => console.error('Failed to load cook profiles:', e));
   }, []);
 
   const matchResult = React.useMemo(() => {
@@ -68,8 +74,21 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
       const cookLat = liveLoc ? liveLoc[0] : c.lat;
       const cookLng = liveLoc ? liveLoc[1] : c.lng;
 
+      const profile = cookProfiles[c.uniqueId];
+      const cookName = profile?.kitchenName || c.name;
+      const cookCuisine = profile?.kitchenCuisine || c.cuisine;
+      const cookLogo = profile?.kitchenLogo || c.image;
+
       const actualDistance = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], cookLat, cookLng);
-      return { ...c, distanceKm: actualDistance.toFixed(1), lat: cookLat, lng: cookLng };
+      return { 
+        ...c, 
+        name: cookName,
+        cuisine: cookCuisine,
+        image: cookLogo,
+        distanceKm: actualDistance.toFixed(1), 
+        lat: cookLat, 
+        lng: cookLng 
+      };
     }).filter(c => parseFloat(c.distanceKm) <= maxDistance && c.availableCapacity > 0);
 
     if (diet === 'Jain Pure Veg') {

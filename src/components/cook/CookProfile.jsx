@@ -1,10 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Store } from 'lucide-react';
 
 export default function CookProfile({ user }) {
   const [kitchenName, setKitchenName] = useState(user?.name || 'My Kitchen');
   const [kitchenLogo, setKitchenLogo] = useState('');
   const [kitchenCuisine, setKitchenCuisine] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    // Load existing profile from backend
+    if (user?.uniqueId) {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      fetch(`${apiUrl}/api/cooks/profiles`)
+        .then(res => res.json())
+        .then(data => {
+          if (data[user.uniqueId]) {
+            setKitchenName(data[user.uniqueId].kitchenName || user.name);
+            setKitchenLogo(data[user.uniqueId].kitchenLogo || '');
+            setKitchenCuisine(data[user.uniqueId].kitchenCuisine || '');
+          }
+        })
+        .catch(err => console.error("Failed to load profile", err));
+    }
+  }, [user]);
+
+  const handleSave = () => {
+    if (!user?.uniqueId) return;
+    setIsSaving(true);
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    fetch(`${apiUrl}/api/cooks/profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uniqueId: user.uniqueId,
+        kitchenName,
+        kitchenLogo,
+        kitchenCuisine
+      })
+    })
+    .then(res => res.json())
+    .then(() => {
+      setIsSaving(false);
+      alert('Profile saved successfully! Customers can now see your updated storefront.');
+    })
+    .catch(err => {
+      console.error(err);
+      setIsSaving(false);
+      alert('Failed to save profile.');
+    });
+  };
 
   return (
     <div className="container" style={{ padding: '32px 0', maxWidth: '600px', margin: '0 auto' }}>
@@ -44,8 +88,12 @@ export default function CookProfile({ user }) {
               placeholder="e.g. Authentic North Indian" 
             />
           </div>
-          <button style={{ background: '#FF5520', color: 'white', padding: '14px 24px', borderRadius: 'var(--radius-sm)', border: 'none', fontWeight: 700, cursor: 'pointer', marginTop: '16px', fontSize: '1rem' }}>
-            Save Profile
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            style={{ background: '#FF5520', color: 'white', padding: '14px 24px', borderRadius: 'var(--radius-sm)', border: 'none', fontWeight: 700, cursor: isSaving ? 'not-allowed' : 'pointer', marginTop: '16px', fontSize: '1rem', opacity: isSaving ? 0.7 : 1 }}
+          >
+            {isSaving ? 'Saving...' : 'Save Profile'}
           </button>
         </div>
       </div>

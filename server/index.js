@@ -219,6 +219,7 @@ app.put('/api/orders/:id/status', async (req, res) => {
 
 // --- Live GPS Sync Endpoints ---
 const liveCookLocations = {}; // { cookUniqueId: [lat, lng] }
+const cookProfiles = {}; // { cookUniqueId: { kitchenName, kitchenLogo, kitchenCuisine } }
 
 app.post('/api/cooks/location', (req, res) => {
   const { uniqueId, lat, lng } = req.body;
@@ -229,6 +230,17 @@ app.post('/api/cooks/location', (req, res) => {
 
 app.get('/api/cooks/location', (req, res) => {
   res.json(liveCookLocations);
+});
+
+app.post('/api/cooks/profile', (req, res) => {
+  const { uniqueId, kitchenName, kitchenLogo, kitchenCuisine } = req.body;
+  if (!uniqueId) return res.status(400).json({ error: 'Missing uniqueId' });
+  cookProfiles[uniqueId] = { kitchenName, kitchenLogo, kitchenCuisine };
+  res.json({ success: true });
+});
+
+app.get('/api/cooks/profiles', (req, res) => {
+  res.json(cookProfiles);
 });
 
 const PORT = process.env.PORT || 3001;
