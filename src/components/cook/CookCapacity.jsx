@@ -31,7 +31,16 @@ export default function CookCapacity({ user, orders }) {
     if (navigator.geolocation) {
       const watchId = navigator.geolocation.watchPosition(
         (position) => {
-          setLiveLocation([position.coords.latitude, position.coords.longitude]);
+          const loc = [position.coords.latitude, position.coords.longitude];
+          setLiveLocation(loc);
+          // Sync with real backend for cross-device support
+          if (user?.uniqueId) {
+            fetch('http://localhost:3001/api/cooks/location', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ uniqueId: user.uniqueId, lat: loc[0], lng: loc[1] })
+            }).catch(e => console.error('Failed to sync GPS:', e));
+          }
           setIsLocating(false);
         },
         (error) => {
@@ -44,7 +53,7 @@ export default function CookCapacity({ user, orders }) {
     } else {
       setIsLocating(false);
     }
-  }, []);
+  }, [user]);
 
   const handleAddItem = (e) => {
     e.preventDefault();

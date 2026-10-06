@@ -31,6 +31,7 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 
 export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
   const [userLocation, setUserLocation] = useState([12.9352, 77.6245]); // Default
+  const [liveCookLocations, setLiveCookLocations] = useState({});
   const [diet, setDiet] = useState('Vegetarian');
   const [mealType, setMealType] = useState('Lunch');
   const [budget, setBudget] = useState(120);
@@ -51,12 +52,23 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
         { enableHighAccuracy: true }
       );
     }
+
+    // Fetch live cook locations from backend
+    fetch('http://localhost:3001/api/cooks/location')
+      .then(res => res.json())
+      .then(data => setLiveCookLocations(data))
+      .catch(e => console.error('Failed to load cook GPS:', e));
   }, []);
 
   const matchResult = React.useMemo(() => {
     let availableCooks = HOME_COOKS.map(c => {
-      const actualDistance = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], c.lat, c.lng);
-      return { ...c, distanceKm: actualDistance.toFixed(1) };
+      // Use live GPS from real backend if available
+      const liveLoc = liveCookLocations[c.uniqueId];
+      const cookLat = liveLoc ? liveLoc[0] : c.lat;
+      const cookLng = liveLoc ? liveLoc[1] : c.lng;
+
+      const actualDistance = getDistanceFromLatLonInKm(userLocation[0], userLocation[1], cookLat, cookLng);
+      return { ...c, distanceKm: actualDistance.toFixed(1), lat: cookLat, lng: cookLng };
     }).filter(c => parseFloat(c.distanceKm) <= maxDistance && c.availableCapacity > 0);
 
     if (diet === 'Jain Pure Veg') {
@@ -76,7 +88,7 @@ export default function AIMatchingScreen({ onConfirmOrder, onSelectCook }) {
       }
     }
     return null;
-  }, [maxDistance, budget, diet, userLocation]);
+  }, [maxDistance, budget, diet, userLocation, liveCookLocations]);
 
   const matchedCook = matchResult?.cook;
   const matchedMeal = matchResult?.meal;

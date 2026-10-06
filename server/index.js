@@ -217,6 +217,20 @@ app.put('/api/orders/:id/status', async (req, res) => {
   }
 });
 
+// --- Live GPS Sync Endpoints ---
+const liveCookLocations = {}; // { cookUniqueId: [lat, lng] }
+
+app.post('/api/cooks/location', (req, res) => {
+  const { uniqueId, lat, lng } = req.body;
+  if (!uniqueId || lat == null || lng == null) return res.status(400).json({ error: 'Missing data' });
+  liveCookLocations[uniqueId] = [lat, lng];
+  res.json({ success: true });
+});
+
+app.get('/api/cooks/location', (req, res) => {
+  res.json(liveCookLocations);
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Backend server running on http://localhost:${PORT}`);

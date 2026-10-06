@@ -27,6 +27,7 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 
 export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
   const [userLocation, setUserLocation] = useState([12.9352, 77.6245]); // Default
+  const [liveCookLocations, setLiveCookLocations] = useState({});
 
   React.useEffect(() => {
     if (navigator.geolocation) {
@@ -38,6 +39,12 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
         { enableHighAccuracy: true }
       );
     }
+
+    // Fetch live cook locations from backend
+    fetch('http://localhost:3001/api/cooks/location')
+      .then(res => res.json())
+      .then(data => setLiveCookLocations(data))
+      .catch(e => console.error('Failed to load cook GPS:', e));
   }, []);
 
   const [dietFilter, setDietFilter] = useState('all');
@@ -49,10 +56,19 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [sortBy, setSortBy] = useState('recommended');
 
-  const processedCooks = HOME_COOKS.map(cook => ({
-    ...cook,
-    realDistance: getDistanceFromLatLonInKm(userLocation[0], userLocation[1], cook.lat, cook.lng)
-  }));
+  const processedCooks = HOME_COOKS.map(cook => {
+    // Use live GPS from real backend if available
+    const liveLoc = liveCookLocations[cook.uniqueId];
+    const cookLat = liveLoc ? liveLoc[0] : cook.lat;
+    const cookLng = liveLoc ? liveLoc[1] : cook.lng;
+
+    return {
+      ...cook,
+      lat: cookLat,
+      lng: cookLng,
+      realDistance: getDistanceFromLatLonInKm(userLocation[0], userLocation[1], cookLat, cookLng)
+    };
+  });
 
   const isAnyCookWithin20Km = processedCooks.some(c => c.realDistance <= 20);
 
