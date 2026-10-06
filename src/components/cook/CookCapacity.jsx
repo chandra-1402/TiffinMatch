@@ -35,7 +35,8 @@ export default function CookCapacity({ user, orders }) {
           setLiveLocation(loc);
           // Sync with real backend for cross-device support (Setting fixed location)
           if (user?.uniqueId) {
-            fetch('http://localhost:3001/api/cooks/location', {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            fetch(`${apiUrl}/api/cooks/location`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ uniqueId: user.uniqueId, lat: loc[0], lng: loc[1] })

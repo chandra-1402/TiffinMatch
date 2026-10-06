@@ -41,7 +41,8 @@ export default function FoodDiscovery({ onSelectCook, setCurrentView }) {
     }
 
     // Fetch live cook locations from backend
-    fetch('http://localhost:3001/api/cooks/location')
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    fetch(`${apiUrl}/api/cooks/location`)
       .then(res => res.json())
       .then(data => setLiveCookLocations(data))
       .catch(e => console.error('Failed to load cook GPS:', e));
