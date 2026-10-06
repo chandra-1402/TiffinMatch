@@ -261,6 +261,7 @@ export default function CookCapacity({ user, orders }) {
           )}
         </div>
       </div>
+      </div>
     </div>
   );
 }
