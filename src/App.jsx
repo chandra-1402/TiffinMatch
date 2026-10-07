@@ -63,15 +63,7 @@ export default function App() {
   }, [currentUser]);
   
   // Cart state
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 'm1-5',
-      name: 'Full Tiffin Thali (AI Recommended)',
-      price: 100,
-      quantity: 1,
-      cookName: 'Maa Ki Rasoi'
-    }
-  ]);
+  const [cartItems, setCartItems] = useState([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
   // Modals
